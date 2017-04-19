@@ -1,8 +1,51 @@
 = Concurrency Tips
+=============================
+:author: Foo Bar 
+:email: <foo@bar.org>
+:description: just a template file.
+:revdate: 2011-12-16
+:revnumber: 0.1
+///////////////////////
+  Themes that you can choose includes:
+  web-2.0, swiss, neon, beamer
+///////////////////////
+:deckjs_theme: web-2.0
+///////////////////////
+  Transitions that you can choose includes:
+  fade, horizontal-slide, vertical-slide
+///////////////////////
+:deckjs_transition: fade
+///////////////////////
+  AsciiDoc use `source-highlight` as default highlighter.
 
-//Author: @eshelestovich
+  Styles available for pygment highlighter:
+  monokai, manni, perldoc, borland, colorful, default, murphy, vs, trac,
+  tango, fruity, autumn, bw, emacs, vim, pastie, friendly, native,
+
+  Uncomment following two lines if you want to highlight your code
+  with `Pygments`.
+///////////////////////
+:pygments:
+:pygments_style: colorful
+///////////////////////
+  Uncomment following line if you want to scroll inside slides
+  with {down,up} arrow keys.
+///////////////////////
+:scrollable:
+///////////////////////
+  Uncomment following line if you want to link css and js file 
+  from outside instead of embedding them into the output file.
+///////////////////////
+//:linkcss:
+///////////////////////
+  Uncomment following line if you want to count each incremental
+  bullet as a new slide
+///////////////////////
+//:count_nested:
+=============================
 
 == Concurrency is hard
+
 * Not enough synchronization leads to races and deadlocks
 * Too much synchronization leads to slow programs
 
@@ -32,7 +75,7 @@ Thread t = new Thread(() -> {
 t.start();
 ----
 
-== The correct way
+== Correct way
 [source,java]
 ----
 while (!Thread.currentThread().isInterrupted()) { // <1>
@@ -81,7 +124,7 @@ Background thread finished.
 ...
 ----
 
-== Guava to the rescue
+== Guava
 [source,java]
 ----
 ExecutorService executor = MoreExecutors.getExitingExecutorService(
@@ -105,15 +148,15 @@ while (true) {
     println(Thread.currentThread().getName() + " is working");
     Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.SECONDS);
     if (i.getAndIncrement() % 4 == 0) { // <2>
-      throw new RuntimeException();
-    }
+      throw new RuntimeException(); 
+    } 
   });
 }
 ----
 <1> 8 threads initially
 <2> inject 25% errors
 
-== Wrong!
+== Silent killer
 [source,console]
 ----
 pool-1-thread-1 is working
@@ -130,7 +173,7 @@ pool-1-thread-9 is working
 pool-1-thread-10 is working
 ----
 
-== Try-catch everything
+== Try-catch in Runnable
 
 Always wrap your `run()` method in `try-catch`:
 
@@ -139,9 +182,9 @@ Always wrap your `run()` method in `try-catch`:
 new Runnable() {
   public void run() {
     try {
-      // business logic
+      // business logic    
     } catch (Throwable e) {
-      // error handling
+      // error handling  
     }
   }
 }
@@ -179,14 +222,17 @@ while (true) {
 }
 ----
 
-== {conseal}
+== OutOfMemoryError
 [source,console]
 ----
+Tasks in queue: 29
+Slow consumer working...
+Tasks in queue: 4190369
+Slow consumer working...
 Tasks in queue: 10406024
 Slow consumer working...
 java.lang.OutOfMemoryError: GC overhead limit exceeded
 ----
-image::disaster_girl.jpg[]
 
 == {conceal}
 image::gc.png[]
@@ -194,15 +240,15 @@ image::gc.png[]
 == Tune your pools
 [source,java]
 ----
-new ThreadPoolExecutor(8, 8,
+new ThreadPoolExecutor(8, 8, 
   60L, TimeUnit.SECONDS,
   new ArrayBlockingQueue<>(1024), // <1>
   new ThreadPoolExecutor.CallerRunsPolicy()); // <2>
 ----
 <1> Limit queue size
-<2> Back-pressure
+<2> Backpressure
 
-== Cached pool
+== Cached thread pool 
 [source,java]
 .java.util.concurrent.Executors
 ----
@@ -224,7 +270,7 @@ MacBook Pro, 2.5 GHz Core i7, 16 GB DDR3
 while(true) {
   new Thread(() -> {
     System.out.println(count.incrementAndGet());
-    try { Thread.sleep(100000000); }
+    try { Thread.sleep(100000000); } 
     catch (InterruptedException ignored) { }
   }).start();
 }
@@ -252,11 +298,11 @@ kern.num_taskthreads: 2048
 == Default stack size
 [source,console]
 ----
-eshelestovich:/$ java -server -XX:+UnlockDiagnosticVMOptions
--XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags
+eshelestovich:/$ java -server -XX:+UnlockDiagnosticVMOptions 
+-XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags 
 -version | grep ThreadStackSize
 
-intx ThreadStackSize = 1024
+intx ThreadStackSize                           = 1024
 ----
 
 * GC pressure
@@ -276,11 +322,8 @@ return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
 `keepAliveTime` - when the number of threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.
 ****
 
-== Vertical scaling
+== Vertical scalability
 image::peak.png[]
-
-== {conseal}
-image:amdahls_law.jpg[] If 95% of the program can be parallelized, the theoretical maximum speedup using parallel computing would be 20 times.
 
 == Optimal number
 For CPU bound tasks, Brian Goetz recommends:
@@ -291,128 +334,12 @@ For mixed workloads, Subramaniam & Goetz agree on:
 ****
 *threads* = number of CPUs * (1 + wait time / service time)
 ****
-E.g. with 8-cores CPU on a 30% I/O workload:
+E.g. with 8-cores CPU on a ~30% I/O workload:
 ****
-8 * (1 + 3 / 10) = [big]*10* threads
+8 * (1 + 3 / 10) = *10* threads
 ****
-
-== Little's Law
-image::littles_law.jpg[]
-
-In order to maintain throughput of *500* req/sec with average latency of *150* ms, we need to allocate *75* parallel workers (threads/processes).
 
 == Mesos issues
-* `Runtime.getRuntime().availableProcessors()` returns the total number of CPU cores available to the entire server, not only container.
-* On a resonably powerful server with 64 CPU cores it leads to hundreds of wasted threads being allocated.
-* You have to manually limit the number of threads available to the process:
-+
-[source,console]
-----
--XX:ParallelGCThreads=8
--XX:ConcGCThreads=2
--Dcom.twitter.finagle.netty4.numWorkers=10
-----
+`Runtime.getRuntime().availableProcessors()` returns the total number of cores available on the node 
 
-== Default names
-[source,console]
-----
-Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.92-b14 mixed mode):
-"pool-1-thread-32" #42 prio=5
-"pool-1-thread-31" #41 prio=5
-"pool-1-thread-30" #40 prio=5
-"pool-1-thread-29" #39 prio=5
-"pool-1-thread-28" #38 prio=5
-...
-----
-
-Complicates debugging and troubleshooting.
-
-== {conseal}
-image::name.jpg[Heizenberg]
-[source,java]
-----
-ThreadFactory factory = new ThreadFactoryBuilder()
-  .setNameFormat("cw-finagle-pool-%d")
-  .setDaemon(true)
-  .build();
-ExecutorService pool = Executors.newFixedThreadPool(4, factory);
-----
-
-== Lock on mutable object
-[source,java]
-----
-private Object[] items = new Object[] {};
-
-private ArrayCopy add(Object newItem) {
-  synchronized (items) {
-    Object[] newArray = new Object[items.length + 1];
-    newArray[items.length] = newItem;
-    System.arraycopy(items, 0, newArray, 0, items.length);
-    items = newArray;
-  }
-  return this;
-}
-----
-CAUTION: From Tomcat 6 (46990)
-
-== Lock on literals
-[source,java]
-----
-private final String lock = "LOCK"; 
-public void doSomething() {
-  synchronized (lock) { ... }
-}
-----
-[source,java]
-----
-private final Integer lock = 42; 
-public void doSomething() {
-  synchronized (lock) { ... }
-}
-----
-CAUTION: From Jetty-6.1.3
-
-== Lock scope
-[source,java]
-----
-private static SysCtx ctx;
-
-public synchronized SysCtx getSysCtx() {
-  if (ctx == null) {
-    ctx = new SysCtx();
-  }
-  return ctx;
-}
-----
-CAUTION: From Android (12015587)
-
-== wait/notifyAll
-[source,java]
-----
-public synchronized void process() { // <1>
-  while(queue.isEmpty()) this.wait(); // <2>
-  Object item = queue.remove();
-  processItem(item);
-}
-
-public synchronized void add(Object item) {
-  queue.add(item);
-  this.notifyAll(); // <3>
-}
-----
-<1> Always check condition under a lock
-<2> Spurious wake-ups
-<3> `notifyAll()`, not `notify()`
-
-CAUTION: From Eclipse (366048). Introduced in 2004, fixed only in 2013.
-
-== ThreadLocal
-image::threadlocal.png[]
-
-* Great tool for avoiding concurrency & synchronization.
-* The lifecyle of ThreadLocal variables is directly interconnected to the lifecyle of its corespondig thread.
-* Depending on the number of threads in the pool and the size of the object in the ThreadLocal variable, critical memory problems can occur.
-* 500 long-living Tomcat threads each holding 10 Mb of data results in 5 Gb of permanently occupied heap.
-* Use `ThreadLocal.remove()` to cleanup data correctly.
-
-CAUTION: From Log4J 1.2 (50486)
+image::threads.png[]
