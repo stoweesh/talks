@@ -1,0 +1,345 @@
+= Concurrency Tips
+=============================
+:author: Foo Bar 
+:email: <foo@bar.org>
+:description: just a template file.
+:revdate: 2011-12-16
+:revnumber: 0.1
+///////////////////////
+  Themes that you can choose includes:
+  web-2.0, swiss, neon, beamer
+///////////////////////
+:deckjs_theme: web-2.0
+///////////////////////
+  Transitions that you can choose includes:
+  fade, horizontal-slide, vertical-slide
+///////////////////////
+:deckjs_transition: fade
+///////////////////////
+  AsciiDoc use `source-highlight` as default highlighter.
+
+  Styles available for pygment highlighter:
+  monokai, manni, perldoc, borland, colorful, default, murphy, vs, trac,
+  tango, fruity, autumn, bw, emacs, vim, pastie, friendly, native,
+
+  Uncomment following two lines if you want to highlight your code
+  with `Pygments`.
+///////////////////////
+:pygments:
+:pygments_style: colorful
+///////////////////////
+  Uncomment following line if you want to scroll inside slides
+  with {down,up} arrow keys.
+///////////////////////
+:scrollable:
+///////////////////////
+  Uncomment following line if you want to link css and js file 
+  from outside instead of embedding them into the output file.
+///////////////////////
+//:linkcss:
+///////////////////////
+  Uncomment following line if you want to count each incremental
+  bullet as a new slide
+///////////////////////
+//:count_nested:
+=============================
+
+== Concurrency is hard
+
+* Not enough synchronization leads to races and deadlocks
+* Too much synchronization leads to slow programs
+
+image::race.png[]
+
+== {conceal}
+[quote, Martin Logan, Erlang in Action]
+____
+Make it work, then make it beautiful, then if you really, really have to, make it fast. 90% of the time, if you make it beautiful, it will already be fast.
+____
+
+== How to stop a thread ?
+[source,java]
+----
+Thread t = new Thread(() -> {
+  while (true) {
+    try {
+      System.out.println("Working");
+      // do some useful work
+      TimeUnit.SECONDS.sleep(10L);
+    } catch (InterruptedException e) {
+      // ignore
+      //e.printStackTrace();
+    }
+  }
+});
+t.start();
+----
+
+== Correct way
+[source,java]
+----
+while (!Thread.currentThread().isInterrupted()) { // <1>
+  try {
+    // ...
+  } catch (InterruptedException e) {
+    Thread.currentThread().interrupt(); // <2>
+  }
+}
+...
+t.interrupt(); // <3>
+----
+<1> Check if somebody wants to stop the thread
+<2> Re-set interrupted flag for callers
+<3> Actual interruption
+
+== Poison pill
+[source,java]
+----
+while (true) {
+  Message message = queue.take();
+  if (POISON_PILL_MSG.equals(message)) { // <1>
+    return;
+  }
+  System.out.println(message.toString());
+  messageCount++;
+}
+----
+<1> Graceful shutdown
+
+== Unstoppable app
+[source,java]
+----
+public static void main(String[] args) {
+  ExecutorService executor = Executors.newSingleThreadExecutor();
+  executor.submit(() -> System.out.println("Background thread finished."));
+  System.out.println("Main thread finished.");
+}
+----
+
+[source,console]
+----
+eshelestovich:/$ java UnstoppablePool
+Main thread finished.
+Background thread finished.
+...
+----
+
+== Guava
+[source,java]
+----
+ExecutorService executor = MoreExecutors.getExitingExecutorService(
+  (ThreadPoolExecutor) Executors.newSingleThreadExecutor());
+----
+
+that basically does:
+
+[source,java]
+----
+executor.setThreadFactory(
+  new ThreadFactoryBuilder().setDaemon(true))
+----
+
+== Fixed pool, right ?
+[source,java]
+----
+ExecutorService executor = Executors.newFixedThreadPool(8)); // <1>
+while (true) {
+  executor.execute(() -> {
+    println(Thread.currentThread().getName() + " is working");
+    Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.SECONDS);
+    if (i.getAndIncrement() % 4 == 0) { // <2>
+      throw new RuntimeException(); 
+    } 
+  });
+}
+----
+<1> 8 threads initially
+<2> inject 25% errors
+
+== Silent killer
+[source,console]
+----
+pool-1-thread-1 is working
+pool-1-thread-2 is working
+Exception in thread "pool-1-thread-1" java.lang.RuntimeException
+  at UnstoppablePool.lambda$main$0(UnstoppablePool.java:27)
+pool-1-thread-4 is working
+pool-1-thread-5 is working
+pool-1-thread-6 is working
+pool-1-thread-8 is working
+Exception in thread "pool-1-thread-6" java.lang.RuntimeException
+  at UnstoppablePool.lambda$main$0(UnstoppablePool.java:27)
+pool-1-thread-9 is working
+pool-1-thread-10 is working
+----
+
+== Try-catch in Runnable
+
+Always wrap your `run()` method in `try-catch`:
+
+[source,java]
+----
+new Runnable() {
+  public void run() {
+    try {
+      // business logic    
+    } catch (Throwable e) {
+      // error handling  
+    }
+  }
+}
+----
+
+== Global exception handler
+[source,java]
+----
+Thread.setDefaultUncaughtExceptionHandler(
+  new Thread.UncaughtExceptionHandler() {
+    public void uncaughtException(Thread t, Throwable e) {
+      LOG.error("Thread " + t + " died", e);
+    }
+  });
+----
+or bail out:
+[source,java]
+----
+Thread.setDefaultUncaughtExceptionHandler(
+  UncaughtExceptionHandlers.systemExit());
+----
+
+== Unbounded queue
+[source,java]
+----
+ExecutorService pool = Executors.newSingleThreadExecutor();
+AtomicLong i = new AtomicLong();
+while (true) {
+  pool.execute(() -> {
+    System.out.println("Tasks in queue: " + i.get());
+    System.out.println("Slow consumer working...");
+    Uninterruptibles.sleepUninterruptibly(5L, TimeUnit.SECONDS);
+  });
+  i.getAndIncrement();
+}
+----
+
+== OutOfMemoryError
+[source,console]
+----
+Tasks in queue: 29
+Slow consumer working...
+Tasks in queue: 4190369
+Slow consumer working...
+Tasks in queue: 10406024
+Slow consumer working...
+java.lang.OutOfMemoryError: GC overhead limit exceeded
+----
+
+== {conceal}
+image::gc.png[]
+
+== Tune your pools
+[source,java]
+----
+new ThreadPoolExecutor(8, 8, 
+  60L, TimeUnit.SECONDS,
+  new ArrayBlockingQueue<>(1024), // <1>
+  new ThreadPoolExecutor.CallerRunsPolicy()); // <2>
+----
+<1> Limit queue size
+<2> Backpressure
+
+== Cached thread pool 
+[source,java]
+.java.util.concurrent.Executors
+----
+public static ExecutorService newCachedThreadPool() {
+  return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                60L, TimeUnit.SECONDS,
+                                new SynchronousQueue<Runnable>());
+}
+----
+
+Will it help ?
+
+== How many threads ?
+
+MacBook Pro, 2.5 GHz Core i7, 16 GB DDR3
+
+[source,java]
+----
+while(true) {
+  new Thread(() -> {
+    System.out.println(count.incrementAndGet());
+    try { Thread.sleep(100000000); } 
+    catch (InterruptedException ignored) { }
+  }).start();
+}
+----
+
+== Not so many actually
+[source,console]
+----
+eshelestovich:/$ java TooManyThreads
+1
+2
+...
+2023
+2024
+Exception in thread "main" java.lang.OutOfMemoryError: unable to create new native thread
+  at java.lang.Thread.start0(Native Method)
+----
+
+[source,console]
+----
+eshelestovich:/$ sysctl kern.num_taskthreads
+kern.num_taskthreads: 2048
+----
+
+== Default stack size
+[source,console]
+----
+eshelestovich:/$ java -server -XX:+UnlockDiagnosticVMOptions 
+-XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags 
+-version | grep ThreadStackSize
+
+intx ThreadStackSize                           = 1024
+----
+
+* GC pressure
+* Large thread dumps
+* Complicates debugging & profiling
+* Try something like `java -Xss256K`
+
+== Dynamic pools
+[source,java]
+----
+return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                              30L, TimeUnit.SECONDS, // <1>
+                              new ArrayBlockingQueue<>(2048));
+----
+
+****
+`keepAliveTime` - when the number of threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.
+****
+
+== Vertical scalability
+image::peak.png[]
+
+== Optimal number
+For CPU bound tasks, Brian Goetz recommends:
+****
+*threads* = number of CPUs + 1
+****
+For mixed workloads, Subramaniam & Goetz agree on:
+****
+*threads* = number of CPUs * (1 + wait time / service time)
+****
+E.g. with 8-cores CPU on a ~30% I/O workload:
+****
+8 * (1 + 3 / 10) = *10* threads
+****
+
+== Mesos issues
+`Runtime.getRuntime().availableProcessors()` returns the total number of cores available on the node 
+
+image::threads.png[]
