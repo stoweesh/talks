@@ -22083,6 +22083,28 @@ HJ1FRv8Adpgc6fDrnP71B/wGhvDL7QfOT/vmt31p7fdFSwMfTfCjtexN56/e/u+1dJ/wir/891/7
 
 <!--slide-->
 <section class="slide slide0">
+<h2 class="section-slide">What can go wrong</h2>
+<ul>
+<li>
+Process (OOME, GC, Linux memory manager)
+</li>
+<li>
+Server (faulty hardware, power outage)
+</li>
+<li>
+Network (split-brain, dropped packets, high latency, firewall)
+</li>
+<li>
+Timing (clock skew, NTP misconfiguration)
+</li>
+<li>
+Byzantine failures (malicious packets, DDOS, wrong input, CSRF, etc)
+</li>
+</ul>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
 <h2 class="section-slide">Things will crash</h2>
 <ul>
 <li>
@@ -22096,6 +22118,34 @@ MTBF of 30 years
 </li>
 <li>
 Watch one fail <strong>per day</strong>
+</li>
+</ul>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">Hardware failures per year</h2>
+<ul>
+<li>
+~1000 individual machine failures
+</li>
+<li>
+thousands of hard drive failures
+</li>
+<li>
+~20 rack failures (40-80 machines instantly disappear, 1-6 hours to get back)
+</li>
+<li>
+~5 racks going wonky (10-20 machines seeing 50% packet loss)
+</li>
+<li>
+~12 router reloads (takes out DNS and external vips for a couple minutes)
+</li>
+<li>
+~8 network maintenances (30-minute random connectivity losses)
+</li>
+<li>
+slow disks, bad memory, misconfigured machines, etc
 </li>
 </ul>
 </section>
@@ -22118,27 +22168,7 @@ Touch 100 of these: 63% of requests take ≥1 sec
 
 <!--slide-->
 <section class="slide slide0">
-<h2 class="section-slide">Hardware failures per year</h2>
-<ul>
-<li>
-~1000 individual machine failures
-</li>
-<li>
-thousands of hard drive failures
-</li>
-<li>
-~20 rack failures (40-80 machines instantly disappear, 1-6 hours to get back)
-</li>
-<li>
-~12 router reloads (takes out DNS and external vips for a couple minutes)
-</li>
-<li>
-~8 network maintenances (30-minute random connectivity losses)
-</li>
-<li>
-slow disks, bad memory, misconfigured machines, etc
-</li>
-</ul>
+<h2 class="section-slide">Software failures</h2>
 </section>
 
 <!--slide-->
