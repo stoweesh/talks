@@ -1,20 +1,21 @@
 = Concurrency Tips
 =============================
-:author: Foo Bar 
+:author: Foo Bar
 :email: <foo@bar.org>
 :description: just a template file.
 :revdate: 2011-12-16
 :revnumber: 0.1
+:backend: deckjs
 ///////////////////////
   Themes that you can choose includes:
   web-2.0, swiss, neon, beamer
 ///////////////////////
-:deckjs_theme: web-2.0
+:deckjs_theme: swiss
 ///////////////////////
   Transitions that you can choose includes:
   fade, horizontal-slide, vertical-slide
 ///////////////////////
-:deckjs_transition: fade
+:deckjs_transition: horizontal-slide
 ///////////////////////
   AsciiDoc use `source-highlight` as default highlighter.
 
@@ -33,7 +34,7 @@
 ///////////////////////
 :scrollable:
 ///////////////////////
-  Uncomment following line if you want to link css and js file 
+  Uncomment following line if you want to link css and js file
   from outside instead of embedding them into the output file.
 ///////////////////////
 //:linkcss:
@@ -148,8 +149,8 @@ while (true) {
     println(Thread.currentThread().getName() + " is working");
     Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.SECONDS);
     if (i.getAndIncrement() % 4 == 0) { // <2>
-      throw new RuntimeException(); 
-    } 
+      throw new RuntimeException();
+    }
   });
 }
 ----
@@ -182,9 +183,9 @@ Always wrap your `run()` method in `try-catch`:
 new Runnable() {
   public void run() {
     try {
-      // business logic    
+      // business logic
     } catch (Throwable e) {
-      // error handling  
+      // error handling
     }
   }
 }
@@ -240,7 +241,7 @@ image::gc.png[]
 == Tune your pools
 [source,java]
 ----
-new ThreadPoolExecutor(8, 8, 
+new ThreadPoolExecutor(8, 8,
   60L, TimeUnit.SECONDS,
   new ArrayBlockingQueue<>(1024), // <1>
   new ThreadPoolExecutor.CallerRunsPolicy()); // <2>
@@ -248,7 +249,7 @@ new ThreadPoolExecutor(8, 8,
 <1> Limit queue size
 <2> Backpressure
 
-== Cached thread pool 
+== Cached thread pool
 [source,java]
 .java.util.concurrent.Executors
 ----
@@ -270,7 +271,7 @@ MacBook Pro, 2.5 GHz Core i7, 16 GB DDR3
 while(true) {
   new Thread(() -> {
     System.out.println(count.incrementAndGet());
-    try { Thread.sleep(100000000); } 
+    try { Thread.sleep(100000000); }
     catch (InterruptedException ignored) { }
   }).start();
 }
@@ -298,8 +299,8 @@ kern.num_taskthreads: 2048
 == Default stack size
 [source,console]
 ----
-eshelestovich:/$ java -server -XX:+UnlockDiagnosticVMOptions 
--XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags 
+eshelestovich:/$ java -server -XX:+UnlockDiagnosticVMOptions
+-XX:+PrintFlagsFinal -XX:+PrintCommandLineFlags
 -version | grep ThreadStackSize
 
 intx ThreadStackSize                           = 1024
@@ -340,6 +341,6 @@ E.g. with 8-cores CPU on a ~30% I/O workload:
 ****
 
 == Mesos issues
-`Runtime.getRuntime().availableProcessors()` returns the total number of cores available on the node 
+`Runtime.getRuntime().availableProcessors()` returns the total number of cores available on the node
 
 image::threads.png[]
