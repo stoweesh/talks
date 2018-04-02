@@ -1,0 +1,2 @@
+#!/bin/bash
+cdk --logo fitbit_logo.png --theme stoweesh --notransition index.asc
