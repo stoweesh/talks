@@ -5,6 +5,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title>Reliability Engineering</title>
         <meta name="viewport" content="width=1024, user-scalable=no">
+        <meta name="author" content="by Eugene Shelestovich @ Fitbit" />
         <meta name="generator" content="cdk" />
         
         <!-- Core and extension CSS files -->
@@ -3099,6 +3100,7 @@ enclosing section
 <body class="deck-container">
 <section class="slide" id="title-slide">
         <h1>Reliability Engineering</h1>
+        <h3>by Eugene Shelestovich @ Fitbit</h3>
 </section>
 </section>
 
@@ -35132,8 +35134,10 @@ Blue/Green, Canary rollout. Safer releases
 <section class="slide slide0">
 <h2 class="section-slide">Begin Today</h2>
 <div class="listingblock">
-<div class="content"><div class="highlight"><pre><span></span><span class="k">until</span> ./start-myserver<span class="p">;</span> <span class="k">do</span>
-    <span class="nb">echo</span> <span class="s2">&quot;Server crashed with code </span><span class="nv">$?</span><span class="s2">. Respawning..&quot;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+<div class="content"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+
+<span class="k">until</span> ./start-myserver<span class="p">;</span> <span class="k">do</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Server crashed with code </span><span class="nv">$?</span><span class="s2">. Respawning...&quot;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
     sleep <span class="m">1</span>
 <span class="k">done</span>
 </pre></div></div></div>
