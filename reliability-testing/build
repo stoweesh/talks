@@ -1,5 +1,5 @@
 #!/bin/bash
-source venv/bin/activate
+source .venv/bin/activate
 cdk --logo fitbit_logo.png --theme stoweesh --notransition index.asc
 deactivate
 
