@@ -3125,7 +3125,7 @@ Now common at Twitter, Facebook, Amazon, GitHub &amp; recently Fitbit (2 years o
 
 <!--slide-->
 <section class="slide slide0">
-<h2 class="section-slide">What do they do ?</h2>
+<h2 class="section-slide">What SREs Do ?</h2>
 <ul>
 <li class="slide">
 <strong>Consult other teams about best practices</strong>
@@ -33098,10 +33098,10 @@ Ub/FXvX7Xo1rqy/hf7v9S/X/dt/PUv/9/+4/YacxZINda2bI3JjSeCfXW+orJvDZzbfuqng399lM
 <p><a href="https://github.com/elastic/elasticsearch/issues/2488" target="_blank">https://github.com/elastic/elasticsearch/issues/2488</a><br>
 Can cause split brain, write loss, and even index corruption</p>
 <div class="listingblock">
-<div class="content"><div class="highlight"><pre><span></span><span class="go">sudo python3 -m http.server 80</span>
+<div class="content"><div class="highlight"><pre><span></span><span class="go">python3 -m http.server 8080</span>
 <span class="go">kill -SIGSTOP $(pidof python)</span>
 <span class="go">kill -SIGCONT $(pidof python)</span>
-<span class="go">curl --head --max-time 3 -L localhost:80</span>
+<span class="go">curl --head --max-time 3 -L localhost:8080</span>
 </pre></div></div></div>
 <div class="admonitionblock">
 <table><tr>
@@ -33135,10 +33135,11 @@ Can cause split brain, write loss, and even index corruption</p>
 <h2 class="section-slide">Unreliable Network</h2>
 <p>Clients from New Zealand &amp; China, flooded link, 3G/EDGE</p>
 <div class="listingblock">
-<div class="content"><div class="highlight"><pre><span></span><span class="go">tc qdisc add dev ens4 root netem delay 500ms 20ms</span>
+<div class="content"><div class="highlight"><pre><span></span><span class="go">tc qdisc add dev ens4 root netem delay 500ms 20ms drop 40%</span>
 <span class="go">tc qdisc add dev ens4 root netem duplicate 30%</span>
 <span class="go">tc qdisc add dev ens4 root netem delay 250ms drop 10% corrupt 10% reorder 10% rate 750kbps # poor 3G/EDGE</span>
 <span class="go">tc qdisc del dev ens4 root netem # revert</span>
+<span class="go">ping localhost -c 10000</span>
 </pre></div></div></div>
 <div class="admonitionblock">
 <table><tr>
@@ -33166,7 +33167,7 @@ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">o
 <div class="title">Read error</div>
 <div class="content"><div class="highlight"><pre><span></span>cat /proc/self/mem
 </pre></div></div></div>
-<p>PetardFS, CharybdeFS (by ScyllaDB)</p>
+<p>PetardFS, CharybdeFS by ScyllaDB</p>
 </section>
 
 <!--slide-->
@@ -33174,7 +33175,7 @@ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">o
 <h2 class="section-slide">Time</h2>
 <ul>
 <li class="slide">
-Virtualization can case time drift (<a href="https://github.com/docker/for-mac/issues/2076" target="_blank">https://github.com/docker/for-mac/issues/2076</a>)
+Virtualization can cause time drift (<a href="https://github.com/docker/for-mac/issues/2076" target="_blank">https://github.com/docker/for-mac/issues/2076</a>)
 </li>
 <li class="slide">
 Misconfigured nodes may not have NTP enabled, or may not be able to reach quorum
@@ -37015,7 +37016,7 @@ yI1x7gAAAABJRU5ErkJggg==" />
 <h2 class="section-slide">Best Practices</h2>
 <ul>
 <li class="slide">
-"Eat Your Own Dog Food"
+"Eat Your Own Dog Food", "You build it, you run it" (c) Werner Vogels
 </li>
 <li class="slide">
 Rigorous monitoring, logging, profiling and tracing
