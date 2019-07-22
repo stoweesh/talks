@@ -3106,6 +3106,34 @@ enclosing section
 
 <!--slide-->
 <section class="slide slide0">
+<h2 class="section-slide">Plan for today</h2>
+<ul>
+<li>
+Why is it important ?
+</li>
+<li>
+Working with threads
+</li>
+<li>
+Locks best practices
+</li>
+<li>
+Tips and tricks
+</li>
+</ul>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide"></h2>
+<blockquote>
+  <p>First make it right, then make it fast - if it is not already fast enough</p>
+  <p><cite>-- The Unix Way </cite></p>
+</blockquote>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
 <h2 class="section-slide">Concurrency is hard</h2>
 <ul>
 <li>
@@ -14071,15 +14099,6 @@ QmCC" />
 <!--slide-->
 <section class="slide slide0">
 <h2 class="section-slide"></h2>
-<blockquote>
-  <p>First make it right, then make it fast - if it is not already fast enough</p>
-  <p><cite>-- The Unix Way </cite></p>
-</blockquote>
-</section>
-
-<!--slide-->
-<section class="slide slide0">
-<h2 class="section-slide"></h2>
 <h1 id="_threads">Threads</h1>
 </section>
 
@@ -14239,7 +14258,7 @@ Graceful shutdown
 <section class="slide slide0">
 <h2 class="section-slide">Fixed pool, right ?</h2>
 <div class="listingblock">
-<div class="content"><div class="highlight"><pre><span></span><span class="n">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="mi">8</span><span class="o">));</span> <span class="c1">// <img alt="1" src="data:image/png;base64,
+<div class="content"><div class="highlight"><pre><span></span><span class="n">ExecutorService</span> <span class="n">executor</span> <span class="o">=</span> <span class="n">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="mi">8</span><span class="o">);</span> <span class="c1">// <img alt="1" src="data:image/png;base64,
 iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAAAAABzHgM7AAAAAmJLR0QAAKqNIzIAAABjSURBVHja
 VY6xDcAwCAS/pPQaLim9QmajdOk2I2SNrMEIlARIoigU8Cek/4e7zdHaWOYOVwaoA6wOCw05Y7FB
 gE0tIWQ+sBcwKM8qoD/wB5wGL8hjfdzWrh01GRp1hInGjDoXwHgsFuzBVLQAAABDdEVYdFNvZnR3
@@ -28199,15 +28218,53 @@ TqNqFKpEEabN/hpJ04ogKqK4eY4nzk0Qp2ZfT42NCAbZLAjy9JiOZLZ+AmVoA1d3YZVgsiaY2JNM
 GC pressure
 </li>
 <li>
-Large thread dumps
-</li>
-<li>
-Complicates debugging &amp; profiling
+Huge thread dumps complicate debugging
 </li>
 <li>
 Try <span class="monospaced">-Xss256K</span>
 </li>
 </ul>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">Docker/Mesos issues</h2>
+<ul>
+<li>
+<span class="monospaced">Runtime.getRuntime().availableProcessors()</span> - the total number of CPUs available to the underlying machine
+</li>
+<li>
+On a resonably powerful server with <strong>64</strong> CPU cores it leads to <strong>hundreds</strong> of wasted threads
+</li>
+<li>
+You have to manually limit the number of threads available to the process
+</li>
+</ul>
+<div class="listingblock">
+<div class="content"><div class="highlight"><pre><span></span><span class="go">-XX:ParallelGCThreads=8</span>
+<span class="go">-XX:ConcGCThreads=2</span>
+<span class="go">-Dcom.twitter.finagle.netty4.numWorkers=10</span>
+</pre></div></div></div>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">Optimal threads count</h2>
+<p>For CPU bound tasks, <em>Brian Goetz</em> recommends:</p>
+<div class="sidebarblock">
+<div class="content">
+<p>threads = number of CPUs + 1</p>
+</div></div>
+<p>For mixed workloads, <em>Subramaniam &amp; Goetz</em> agree on:</p>
+<div class="sidebarblock">
+<div class="content">
+<p>threads = number of CPUs * (1 + wait time / service time)</p>
+</div></div>
+<p>E.g. with 8-cores CPU on a 30% I/O workload:</p>
+<div class="sidebarblock">
+<div class="content">
+<p>8 * (1 + 30 / 70) = <strong><span class="big">11</span></strong> threads</p>
+</div></div>
 </section>
 
 <!--slide-->
@@ -29373,47 +29430,6 @@ AAAAAAAAAAAAAAAP/9k=" />
 </div>
 <p>Scalability is limited by the amount of code executed <strong>serially</strong>.<br>
 E.g. if <strong>95%</strong> of the program can be parallelized, the theoretical maximum speedup would be <strong>20</strong> times.</p>
-</section>
-
-<!--slide-->
-<section class="slide slide0">
-<h2 class="section-slide">Optimal threads count</h2>
-<p>For CPU bound tasks, <em>Brian Goetz</em> recommends:</p>
-<div class="sidebarblock">
-<div class="content">
-<p>threads = number of CPUs + 1</p>
-</div></div>
-<p>For mixed workloads, <em>Subramaniam &amp; Goetz</em> agree on:</p>
-<div class="sidebarblock">
-<div class="content">
-<p>threads = number of CPUs * (1 + wait time / service time)</p>
-</div></div>
-<p>E.g. with 8-cores CPU on a 30% I/O workload:</p>
-<div class="sidebarblock">
-<div class="content">
-<p>8 * (1 + 30 / 70) = <strong><span class="big">11</span></strong> threads</p>
-</div></div>
-</section>
-
-<!--slide-->
-<section class="slide slide0">
-<h2 class="section-slide">Docker/Mesos issues</h2>
-<ul>
-<li>
-<span class="monospaced">Runtime.getRuntime().availableProcessors()</span> - the total number of CPUs available to the underlying machine
-</li>
-<li>
-On a resonably powerful server with <strong>64</strong> CPU cores it leads to <strong>hundreds</strong> of wasted threads
-</li>
-<li>
-You have to manually limit the number of threads available to the process
-</li>
-</ul>
-<div class="listingblock">
-<div class="content"><div class="highlight"><pre><span></span><span class="go">-XX:ParallelGCThreads=8</span>
-<span class="go">-XX:ConcGCThreads=2</span>
-<span class="go">-Dcom.twitter.finagle.netty4.numWorkers=10</span>
-</pre></div></div></div>
 </section>
 
 <!--slide-->
@@ -30593,7 +30609,7 @@ zx3aDsBtkX6r/Wsa2/11dX4W/wCPu5/3T/IUGqmzncMDg8n64xTufQ/990sn+sb6n+dNpkSk7n//
 
 <span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">void</span> <span class="nf">add</span><span class="o">(</span><span class="n">Object</span> <span class="n">item</span><span class="o">)</span> <span class="o">{</span>
   <span class="n">queue</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">item</span><span class="o">);</span>
-  <span class="k">this</span><span class="o">.</span><span class="na">notifyAll</span><span class="o">();</span> <span class="c1">// not notify()</span>
+  <span class="k">this</span><span class="o">.</span><span class="na">notifyAll</span><span class="o">();</span> <span class="c1">// not notify!</span>
 <span class="o">}</span>
 </pre></div></div></div>
 <div class="admonitionblock">
@@ -34229,29 +34245,25 @@ WHNddL20fTNjzz71fwHmALNVUpTYBgAAAABJRU5ErkJggg==" />
 </div>
 </div>
 <ul>
-<li>
+<li class="slide">
 Great tool for avoiding concurrency &amp; synchronization
 </li>
-<li>
-The lifecyle of <span class="monospaced">ThreadLocal</span> variable extends to the lifecyle of its corespondig thread
+<li class="slide">
+Lifecyle extends to its coresponding thread
 </li>
-<li>
+<li class="slide">
 May lead to memory leaks
 </li>
-<li>
+<li class="slide">
 E.g. <strong>500</strong> long-living Tomcat threads each holding <strong>10</strong> Mb of data results in <strong>5</strong> Gb of wasted heap
 </li>
-<li>
-Always explicitly cleanup with <span class="monospaced">ThreadLocal.remove()</span>
+<li class="slide">
+Explicitly cleanup with <span class="monospaced">ThreadLocal.remove()</span>
+</li>
+<li class="slide">
+Bug in Log4j (50486)
 </li>
 </ul>
-<div class="admonitionblock">
-<table><tr>
-<td class="icon caution">
-</td>
-<td class="content">Bug in Log4j (50486)</td>
-</tr></table>
-</div>
 </section>
 
 <!--slide-->
@@ -34259,7 +34271,7 @@ Always explicitly cleanup with <span class="monospaced">ThreadLocal.remove()</sp
 <h2 class="section-slide">I/O under lock</h2>
 <div class="listingblock">
 <div class="content"><div class="highlight"><pre><span></span><span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
-  <span class="n">Future</span><span class="o">&lt;</span><span class="n">UserPrefs</span><span class="o">&gt;</span> <span class="n">prefs</span> <span class="o">=</span> <span class="n">prefsService</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">id</span><span class="o">);</span> <span class="c1">// blocking network I/O</span>
+  <span class="n">Future</span><span class="o">&lt;</span><span class="n">UserPrefs</span><span class="o">&gt;</span> <span class="n">prefs</span> <span class="o">=</span> <span class="n">prefsService</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">id</span><span class="o">);</span> <span class="c1">// network I/O</span>
 <span class="o">}</span>
 </pre></div></div></div>
 <p>Set timeouts explicitly:</p>
@@ -34281,26 +34293,6 @@ Always explicitly cleanup with <span class="monospaced">ThreadLocal.remove()</sp
 <!--slide-->
 <section class="slide slide0">
 <h2 class="section-slide">ReentrantLock</h2>
-<ul>
-<li>
-Unstructured, you can hold a lock across methods
-</li>
-<li>
-<span class="monospaced">tryLock()</span>, <span class="monospaced">tryLock(long timeout)</span> and <span class="monospaced">lockInterruptibly()</span>
-</li>
-<li>
-Multiple <span class="monospaced">Condition</span> per lock
-</li>
-<li>
-Configurable fairness to avoid starvation
-</li>
-<li>
-Could be faster in high-contention scenarios due to <em>Lock Bargain</em>
-</li>
-<li>
-Use it when you actually need something that <span class="monospaced">synchronized</span> doesn&#8217;t provide
-</li>
-</ul>
 <div class="listingblock">
 <div class="content"><div class="highlight"><pre><span></span><span class="n">Lock</span> <span class="n">lock</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ReentrantLock</span><span class="o">();</span>
 <span class="n">lock</span><span class="o">.</span><span class="na">lock</span><span class="o">();</span>
@@ -34314,31 +34306,52 @@ Use it when you actually need something that <span class="monospaced">synchroniz
 
 <!--slide-->
 <section class="slide slide0">
-<h2 class="section-slide">synchronized { }</h2>
+<h2 class="section-slide">ReentrantLock</h2>
 <ul>
-<li>
-No need to manually unlock
+<li class="slide">
+You can hold a lock across methods
 </li>
-<li>
-<em>Biased Lock</em>, thin &#8594; biased | fat (inflated), breaks on <span class="monospaced">System.identityHashCode()</span>
+<li class="slide">
+<span class="monospaced">tryLock()</span>, <span class="monospaced">tryLock(long timeout)</span> and <span class="monospaced">lockInterruptibly()</span>
 </li>
-<li>
-<em>Lock Coarsening</em>, <em>Lock Striping</em>, <em>Lock Elision</em> JVM optimizations
+<li class="slide">
+Multiple <span class="monospaced">Condition</span> per lock
 </li>
-<li>
-Some tools show only <span class="monospaced">synchronized</span> in thread dumps, use <span class="monospaced">jstack -l</span>
+<li class="slide">
+Configurable fairness to avoid starvation
 </li>
-<li>
-Could be faster in low-contention scenarios
+<li class="slide">
+Could be faster in high-contention scenarios due to <em>Lock Bargain</em>
+</li>
+<li class="slide">
+Some tools don&#8217;t show it in thread dumps, use <span class="monospaced">jstack -l</span>
+</li>
+<li class="slide">
+Use it when you really need something that <span class="monospaced">synchronized</span> doesn&#8217;t provide
 </li>
 </ul>
-<div class="admonitionblock">
-<table><tr>
-<td class="icon caution">
-</td>
-<td class="content"><span class="big">Benchmark</span> on your specific workload</td>
-</tr></table>
-</div>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">synchronized { }</h2>
+<ul>
+<li class="slide">
+No need to explicitly unlock!
+</li>
+<li class="slide">
+<em>Biased Lock</em>, thin &#8594; biased | fat (inflated)
+</li>
+<li class="slide">
+<em>Lock Coarsening</em>, <em>Lock Striping</em>, <em>Lock Elision</em> JVM optimizations
+</li>
+<li class="slide">
+Could be faster in low-contention scenarios
+</li>
+<li class="slide">
+<span class="big">Benchmark</span> on your specific workload
+</li>
+</ul>
 </section>
 
 <!--slide-->
@@ -34367,32 +34380,54 @@ Could be faster in low-contention scenarios
 <!--slide-->
 <section class="slide slide0">
 <h2 class="section-slide"></h2>
-<p><strong>Serialization</strong> hurts scalability, <strong>context switches</strong> hurt performance.<br>
-<strong>Contended</strong> locking causes both.</p>
+<p><span class="big">Serialization</span> hurts scalability.<br>
+<span class="big">Context switches</span> hurt performance.<br>
+<span class="big">Contended</span> locking causes both.</p>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">Tactical Tips</h2>
 <ul>
 <li class="slide">
-Hold locks as briefly as possible, no expensive calculations
+Hold locks as briefly as possible, avoid expensive calculations
 </li>
 <li class="slide">
-Atomics: <span class="monospaced">AtomicReference, AtomicReferenceArray, AtomicReferenceFieldUpdater</span>
+<span class="monospaced">AtomicReference, AtomicReferenceArray, AtomicReferenceFieldUpdater</span>
 </li>
 <li class="slide">
-Concurrent collections: <span class="monospaced">ConcurrentHashMap, ConcurrentSkipListSet, CopyOnWriteArrayList</span>
+<span class="monospaced">ConcurrentHashMap, ConcurrentSkipListSet, CopyOnWriteArrayList</span>
 </li>
 <li class="slide">
 <span class="monospaced">ReadWriteLock</span>, <span class="monospaced">StampedLock</span> (since 1.8) for read-heavy scenarios
 </li>
 <li class="slide">
-Local variables and <span class="monospaced">ThreadLocal</span>
-</li>
-<li class="slide">
-Favor <strong>immutability</strong>
-</li>
-<li class="slide">
-Avoid object pooling
+Be careful with object pooling
 </li>
 <li class="slide">
 <span class="big">Measure, don’t guess!</span> JMH, JVisualVM, JMC
+</li>
+</ul>
+</section>
+
+<!--slide-->
+<section class="slide slide0">
+<h2 class="section-slide">Strategic Tips</h2>
+<ul>
+<li class="slide">
+Avoid synchronization completely at design time
+</li>
+<li class="slide">
+Sum of all ages in the room
+</li>
+<li class="slide">
+Local variables and <span class="monospaced">ThreadLocal</span>
+</li>
+<li class="slide">
+Queue/partition per consumer
+</li>
+<li class="slide">
+Functional programming, immutability
 </li>
 </ul>
 </section>
@@ -34410,16 +34445,16 @@ Avoid object pooling
 <span class="o">}</span>
 </pre></div></div></div>
 <ul>
-<li class="slide">
+<li>
 Use separate fine-grained locks to guard <strong>independent</strong> data
 </li>
-<li class="slide">
+<li>
 Trade-off between memory and performance
 </li>
-<li class="slide">
+<li>
 <span class="monospaced">ConcurrentHashMap</span> holds <span class="monospaced">16</span> buckets/locks by default
 </li>
-<li class="slide">
+<li>
 <span class="monospaced">com.google.common.util.concurrent.Striped</span>
 </li>
 </ul>
