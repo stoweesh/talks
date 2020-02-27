@@ -5,7 +5,6 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title>Reliability Engineering</title>
         <meta name="viewport" content="width=1024, user-scalable=no">
-        <meta name="author" content="Eugene Shelestovich" />
         <meta name="generator" content="cdk" />
         
         <!-- Core and extension CSS files -->
@@ -3100,7 +3099,6 @@ enclosing section
 <body class="deck-container">
 <section class="slide" id="title-slide">
         <h1>Reliability Engineering</h1>
-        <h3>Eugene Shelestovich</h3>
 </section>
 </section>
 
@@ -18761,7 +18759,7 @@ Slow disks, bad memory, misconfigured switches, etc.
 Super reliable servers (MTBF 30 years)
 </li>
 <li class="slide">
-Take 10 000 of those
+Take 10K of those
 </li>
 <li class="slide">
 Watch 1 server failure <strong>every day</strong>
@@ -23720,16 +23718,18 @@ HsgeyB7IHmjfA/8/5vk/T01qRIwAAAAASUVORK5CYII=" />
 
 <!--slide-->
 <section class="slide slide0">
-<h2 class="section-slide">Amazon downtime</h2>
-<p>2h site wide outage. The failure was caused by a single server failing within the remote catalog service when its disk filled up. Due to mishandling of that error condition, the remote catalog server started returning empty responses to every request it received. It also started returning them very quickly, because it’s a lot faster to return nothing than something (at least it was in this case). Meanwhile, the load balancer between the website and the remote catalog service didn’t notice that all the responses were zero-length. But, it did notice that they were blazingly faster than all the other remote catalog servers. So, it sent a huge amount of the traffic from www.amazon.com to the one remote catalog server whose disk was full. Effectively, the entire website went down because one remote server couldn’t display any product information.</p>
+<h2 class="section-slide">Downtime Cost</h2>
 <div class="sidebarblock">
 <div class="content">
-<p>A <strong>3-day</strong> failure of any top cloud would cost the US economy up to <strong>$15MM</strong>, with the burden falling on small and medium-sized businesses</p>
+<div class="title">2018 Lloyd&#8217;s Research</div>
+<p><strong>3-day</strong> failure of any top cloud would cost the US economy up to <strong>$15MM</strong>, with the burden falling on small and medium-sized businesses</p>
 </div></div>
-<p>2018 Lloyd&#8217;s Research, CAUTION: NOTE: Amazon&#8217;s distributed infrastructure <strong>5x</strong> larger than competitors</p>
-<p>$700M / day
-$3.6MM / on Prime Day
-$30M / hour</p>
+<div class="sidebarblock">
+<div class="content">
+<div class="title">Amazon Outage</div>
+<p>Due to mishandling of that error condition, the server started returning empty responses to every request it received.</p>
+<p><strong>$700M/day</strong> or <strong>$30M/hour</strong> and potentially <strong>$3.6MM</strong> on Prime Day</p>
+</div></div>
 </section>
 
 <!--slide-->
@@ -36520,11 +36520,6 @@ It took down a 4000+ nodes Hadoop production cluster:</p>
 
 <!--slide-->
 <section class="slide slide0">
-<h2 class="section-slide"></h2>
-</section>
-
-<!--slide-->
-<section class="slide slide0">
 <h2 class="section-slide">Fault Injection</h2>
 <div class="imageblock">
 <div class="content">
@@ -40105,7 +40100,7 @@ Ub/FXvX7Xo1rqy/hf7v9S/X/dt/PUv/9/+4/YacxZINda2bI3JjSeCfXW+orJvDZzbfuqng399lM
 <p>Clients from NZ or China, noisy link, 3G/EDGE</p>
 <div class="listingblock">
 <div class="content"><div class="highlight"><pre><span></span><span class="go">tc qdisc add dev ens4 root netem delay 300ms 20ms drop 30%</span>
-<span class="go">tc qdisc add dev ens4 root netem delay 200ms drop 10% corrupt 10% reorder 10% duplicate 10% rate 750kbps # poor 3G/EDGE</span>
+<span class="go">tc qdisc add dev ens4 root netem delay 200ms drop 10% corrupt 10% reorder 10% rate 750kbps # poor 3G/EDGE</span>
 <span class="go">tc qdisc del dev ens4 root netem # revert</span>
 </pre></div></div></div>
 <div class="admonitionblock">
@@ -40141,31 +40136,28 @@ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">o
 <h2 class="section-slide">Best Practices</h2>
 <ul>
 <li class="slide">
-Sleep with the solution over night, you&#8217;ll be surprised how many bugs/corner cases you come up with next morning
+Sleep with the solution over night
 </li>
 <li class="slide">
-No ninja commits to Prod, infra as code, DB updates as code
+No ninja commits to prod, infra as code, db updates as code
 </li>
 <li class="slide">
 Run on your laptop first, Docker Compose
 </li>
 <li class="slide">
-Go read 12factor.net
-</li>
-<li class="slide">
 "Eat Your Own Dog Food", "You build it, you run it"
 </li>
 <li class="slide">
-Rigorous monitoring, logging, profiling and tracing. "Hope is not a strategy"
+Go read 12factor.net
 </li>
 <li class="slide">
-Be partially available. Limited or stale functionality is better than an error
+Rigorous monitoring, logging, tracing, exceptions tracking (sentry.io). "Hope is not a strategy"
 </li>
 <li class="slide">
-Retry, with jittered exponential back-off. Most failures are transient. Don&#8217;t DDOS yourself
+Estimate your capacity. Back-of-the-envelope calculations. Load/stress tests
 </li>
 <li class="slide">
-Put limits and timeouts on everything: bounded queues, # of threads, cache size
+Don&#8217;t over-engineer. StackOverflow sits on 2 machines
 </li>
 </ul>
 </section>
@@ -40175,34 +40167,34 @@ Put limits and timeouts on everything: bounded queues, # of threads, cache size
 <h2 class="section-slide"></h2>
 <ul>
 <li class="slide">
+Fail fast, fail often. Optimize for MTTR, not MTBF
+</li>
+<li class="slide">
+Healthchecks/probes to restart the service automatically (K8S, Aurora)
+</li>
+<li class="slide">
+Retry, with jittered exponential back-off. Most failures are transient. Don&#8217;t DDOS yourself
+</li>
+<li class="slide">
+Put limits and timeouts on everything: bounded queues, # of threads, cache size
+</li>
+<li class="slide">
 Backpressure &amp; throttling. HTTP 429
 </li>
 <li class="slide">
 Circuit Breaker (Hystrix, resilience4j) and Service Mesh (Linkerd, Istio, Consul)
 </li>
 <li class="slide">
-Exceptions tracking, sentry.io
+Be partially available. Limited or stale functionality is better than an error
 </li>
 <li class="slide">
-Healthchecks/probes to restart the service automatically (K8S, Aurora)
-</li>
-<li class="slide">
-Fail fast, fail often. Optimize for MTTR, not MTBF
+Avoid distributed coordination. E.g. ID generators, global locks, leader election
 </li>
 <li class="slide">
 Adopt Feature Flags/Toggles. Safer releases. Quick rollbacks. Path to A/B testing
 </li>
 <li class="slide">
 Blue/Green, Canary rollout. Safer releases
-</li>
-<li class="slide">
-Estimate your capacity. Back-of-the-envelope calculations. "Numbers Everyone Should Know"
-</li>
-<li class="slide">
-Avoid distributed coordination. E.g. ID generators, global locks, leader election
-</li>
-<li class="slide">
-Don&#8217;t over-engineer. StackOverflow sits on 2 machines
 </li>
 </ul>
 </section>
